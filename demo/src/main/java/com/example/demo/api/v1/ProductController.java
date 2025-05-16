@@ -83,7 +83,7 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<?> createProduct(@RequestBody Product productRequest) {
-        // Tạo sản phẩm mới
+        
         Product product = Product.builder()
             .productId(UUID.randomUUID().toString())
             .name(productRequest.getName())
@@ -121,7 +121,7 @@ public class ProductController {
             ));
         }
 
-        // Cập nhật thông tin sản phẩm
+        
         existingProduct.setName(productRequest.getName());
         existingProduct.setCategory(productRequest.getCategory());
         existingProduct.setSubCategory(productRequest.getSubCategory());

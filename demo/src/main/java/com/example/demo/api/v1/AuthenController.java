@@ -20,28 +20,21 @@ public class AuthenController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestParam String identifier,
+            @RequestParam String userName,
             @RequestParam String password) {
         
-        // Kiểm tra xem identifier là email hay số điện thoại
-        boolean isEmail = identifier.contains("@");
         
-        User user;
-        if (isEmail) {
-            user = userService.findByEmail(identifier);
-        } else {
-            user = userService.findByPhoneNumber(identifier);
-        }
+        User user = userService.getUserByUserName(userName);
         
-        // Kiểm tra user tồn tại
+        
         if (user == null) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", isEmail ? "Email not found" : "Phone number not found"
+                "message", "Username not found"
             ));
         }
         
-        // Kiểm tra mật khẩu
+        
         if (!SecurityUtil.verifyPassword(password, user.getPassword())) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
@@ -49,19 +42,19 @@ public class AuthenController {
             ));
         }
         
-        // Tạo token
+        
         String token = UUID.randomUUID().toString();
         user.setToken(token);
 
-        // Thiết lập thời gian hết hạn token (ví dụ: 24 giờ)
+        
         Date tokenExpired = new Date(System.currentTimeMillis() + 86400000);
         user.setTokenExpired(tokenExpired);
         user.setUpdatedAt(new Date());
 
-        // Lưu user với token mới
+        
         userService.saveUser(user);
 
-        // Trả về thông tin user và token
+        
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", "Login successful");
@@ -72,54 +65,128 @@ public class AuthenController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
-            @RequestParam(value = "identifier", required = true) String identifier,
-            @RequestParam("password") String password,
-            @RequestParam(value = "userName", required = false) String userName
+            @RequestParam(value = "userName", required = true) String userName,
+            @RequestParam(value = "email", required = true) String email,
+            @RequestParam(value = "password", required = true) String password,
+            @RequestParam(value = "confirmPassword", required = true) String confirmPassword
     ) {
-        log.info("Request registration with identifier: {}", identifier);
+        log.info("Request registration with userName: {}, email: {}", userName, email);
 
-        // Kiểm tra xem identifier là email hay số điện thoại
-        boolean isEmail = identifier.contains("@");
-        String baseOn = isEmail ? "email" : "phone";
         
-        // Kiểm tra xem email hoặc số điện thoại đã tồn tại chưa
-        if (isEmail && userService.findByEmail(identifier) != null) {
+        if (userService.getUserByUserName(userName) != null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Username already exists"
+            ));
+        }
+
+        
+        if (userService.findByEmail(email) != null) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "message", "Email already exists"
             ));
         }
 
-        if (!isEmail && userService.findByPhoneNumber(identifier) != null) {
+        
+        if (!password.equals(confirmPassword)) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", "Phone number already exists"
+                "message", "Passwords do not match"
             ));
         }
 
-        // Tạo user mới
+        
         User user = User.builder()
             .userId(UUID.randomUUID().toString())
-            .email(isEmail ? identifier : null)
-            .phoneNumber(!isEmail ? identifier : null)
-            .baseOn(baseOn)
+            .userName(userName)
+            .email(email)
             .password(SecurityUtil.md5Encrypt(password))
-            .userName(userName != null ? userName : "User_" + System.currentTimeMillis())
             .token(UUID.randomUUID().toString())
             .tokenExpired(new Date(System.currentTimeMillis() + 86400000))
             .createdAt(new Date())
             .updatedAt(new Date())
             .build();
 
-        // Lưu user
+        
         userService.saveUser(user);
 
-        // Trả về thông tin user và token
+        
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", "Registration successful");
         response.put("data", user);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @RequestParam String userName,
+            @RequestParam String emailOrPhone,
+            @RequestParam String newPassword,
+            @RequestParam String confirmPassword) {
+        
+        log.info("Request password reset for userName: {}", userName);
+        
+        
+        User user = userService.getUserByUserName(userName);
+        
+        
+        if (user == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Username not found"
+            ));
+        }
+        
+        
+        boolean emailMatches = user.getEmail() != null && user.getEmail().equals(emailOrPhone);
+        boolean phoneMatches = user.getPhoneNumber() != null && user.getPhoneNumber().equals(emailOrPhone);
+        
+        if (!emailMatches && !phoneMatches) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Email or phone number does not match"
+            ));
+        }
+        
+        
+        if (!newPassword.equals(confirmPassword)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Passwords do not match"
+            ));
+        }
+        
+        
+        if (!SecurityUtil.isStrongPassword(newPassword)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters"
+            ));
+        }
+        
+        
+        user.setPassword(SecurityUtil.md5Encrypt(newPassword));
+        
+        
+        String token = UUID.randomUUID().toString();
+        user.setToken(token);
+        
+        
+        Date tokenExpired = new Date(System.currentTimeMillis() + 86400000);
+        user.setTokenExpired(tokenExpired);
+        user.setUpdatedAt(new Date());
+        
+        
+        userService.saveUser(user);
+        
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Password reset successful");
+        
         return ResponseEntity.ok(response);
     }
 }

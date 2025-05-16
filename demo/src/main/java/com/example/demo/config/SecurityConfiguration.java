@@ -44,20 +44,24 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/anonymous/**").permitAll()
-                .requestMatchers("/v1/**").permitAll()
-                .requestMatchers("/ws/**").permitAll()
-                .requestMatchers("/internal/**", "/without-bearer/**", "/actuator/**").permitAll()
+                .requestMatchers("/v1/authen/**").permitAll()
+                .requestMatchers("/v1/products/**").permitAll()
+                .requestMatchers("/img/**").permitAll() // Cho phép truy cập tài nguyên tĩnh
+                .requestMatchers("/css/**").permitAll() // Cho phép truy cập tài nguyên tĩnh
+                .requestMatchers("/js/**").permitAll() // Cho phép truy cập tài nguyên tĩnh
                 .anyRequest().authenticated()
             )
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthenticationEntryPoint))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(restAuthenticationEntryPoint)
+            )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
+        
         return http.build();
     }
 }

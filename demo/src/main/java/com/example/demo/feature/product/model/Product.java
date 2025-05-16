@@ -26,10 +26,10 @@ public class Product implements Serializable {
     private String name;
 
     @Column(nullable = false)
-    private String category; // Nam/Nữ
+    private String category; 
 
     @Column(nullable = false)
-    private String subCategory; // Áo, Quần, etc.
+    private String subCategory; 
 
     @Column(nullable = false)
     private Double price;

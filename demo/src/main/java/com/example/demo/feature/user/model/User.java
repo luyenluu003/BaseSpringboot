@@ -23,19 +23,16 @@ public class User implements Serializable {
     private String userId;
 
     @Column(unique = true)
+    private String userName;
+
+    @Column(unique = true)
     private String email;
 
     @Column(unique = true)
     private String phoneNumber;
 
     @Column
-    private String baseOn; // email hoặc phone
-
-    @Column
     private String password;
-
-    @Column
-    private String userName;
 
     @Column
     private String token;

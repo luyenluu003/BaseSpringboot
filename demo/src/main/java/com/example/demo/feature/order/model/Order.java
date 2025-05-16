@@ -29,7 +29,7 @@ public class Order implements Serializable {
     private Double totalAmount;
 
     @Column
-    private String status; // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+    private String status; 
 
     @Column
     private String shippingAddress;

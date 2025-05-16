@@ -75,7 +75,7 @@ public class OrderController {
             @RequestParam String phoneNumber,
             @RequestParam String paymentMethod) {
         
-        // Lấy giỏ hàng
+        
         Cart cart = cartService.getCartByUserId(userId);
         if (cart == null) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -92,7 +92,7 @@ public class OrderController {
             ));
         }
         
-        // Tính tổng tiền
+        
         double totalAmount = 0;
         for (CartItem item : cartItems) {
             Product product = productService.getProductById(item.getProductId());
@@ -101,7 +101,7 @@ public class OrderController {
             }
         }
         
-        // Tạo đơn hàng
+        
         Order order = Order.builder()
                 .orderId(UUID.randomUUID().toString())
                 .userId(userId)
@@ -116,7 +116,7 @@ public class OrderController {
         
         orderService.saveOrder(order);
         
-        // Tạo các mục đơn hàng
+        
         for (CartItem item : cartItems) {
             Product product = productService.getProductById(item.getProductId());
             if (product != null) {
@@ -133,7 +133,7 @@ public class OrderController {
             }
         }
         
-        // Xóa giỏ hàng sau khi đặt hàng
+        
         cartService.clearCart(cart.getCartId());
         
         return ResponseEntity.ok(Map.of(
@@ -155,7 +155,7 @@ public class OrderController {
             ));
         }
         
-        // Chỉ có thể hủy đơn hàng ở trạng thái PENDING hoặc PROCESSING
+        
         if (!order.getStatus().equals("PENDING") && !order.getStatus().equals("PROCESSING")) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
@@ -187,7 +187,7 @@ public class OrderController {
             ));
         }
         
-        // Kiểm tra trạng thái hợp lệ
+        
         List<String> validStatuses = Arrays.asList("PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED");
         if (!validStatuses.contains(status)) {
             return ResponseEntity.badRequest().body(Map.of(
